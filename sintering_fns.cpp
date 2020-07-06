@@ -4,9 +4,16 @@
 
 // Global Variables
 
+const double GA = 10.0;
+double Gcm = 1.0;
+double GB = 1.0;
+double Ggam = 1.0; 
+double GDa = 1.0;
+double GDb = 1.0;
+
 const double GMnc = 0.6;
 const double GMc = 0.6;
-const double Gh = 1;
+const double Gh = 1.0;
 const double Gdt = .001;
 const double GFluct = 0.02;
 const int Gnumop = (int)(NUMOP);
@@ -83,7 +90,7 @@ void init_mic(void) {
         for (j = 0; j < YSIZE; ++j) {
             for (i = 0; i < XSIZE; ++i) {
                 if (k == 0) {
-                    Gop[k][i][j] = 0.99;
+                    Gop[k][i][j] = 0.0;
                 } else {
                     Gop[k][i][j] = 0.0;
                 }
@@ -93,11 +100,13 @@ void init_mic(void) {
         }
     }
 
-    // Set interface energies
+    // Set all non-constant parameters
     
-    Geps2[0] = 0.5;
+    GB = 1.0;
+
+    Geps2[0] = 2.0;
     for (k = 1; k < NUMOP; ++k) {
-        Geps2[k] = 0.2;//0.5;
+        Geps2[k] = 2.0;
     }
 
     // Set center of first circle
@@ -107,12 +116,22 @@ void init_mic(void) {
     yc = 50.0;
     nyc = (int)(yc);
 
-
     // Set radius of first circle
     
-    radius = 7.5;
+    radius = 7.0;
     irad = (int)(radius);
     opnum = 1;
+
+    /*
+    xc = 13.0;
+    nxc = (int)(xc);
+    yc = 10.0;
+    nyc = (int)(yc);
+
+    radius = 3.0;
+    irad = (int)(radius);
+    opnum = 1;
+    */
 
     // Place first circle
     
@@ -123,10 +142,10 @@ void init_mic(void) {
             dist = sqrt(xdist2 + ydist2);
             if ((dist - 0.5) <= radius) {
                 Gop[opnum][i][j] = 1.0; // Belongs to particle opnum
-                Gop[0][i][j] = 0.01;     // Is solid
+                Gop[0][i][j] = 1.0;     // Is solid
             } else {
                 Gop[opnum][i][j] = 0.0; // Does not belong to particle opnum
-                Gop[0][i][j] = 0.99;     // Is vapor
+                Gop[0][i][j] = 0.0;     // Is vapor
             }
         }
     }
@@ -141,9 +160,23 @@ void init_mic(void) {
 
     // Set radius of second circle
     
-    radius = 7.5;
+    radius = 7.0;
     irad = (int)(radius);
     opnum = 2;
+
+    /*
+    xc = 7.0;
+    nxc = (int)(xc);
+    yc = 10.0;
+    nyc = (int)(yc);
+
+
+    // Set radius of second circle
+    
+    radius = 3.0;
+    irad = (int)(radius);
+    opnum = 2;
+    */
 
     // Place second circle
     
@@ -153,16 +186,11 @@ void init_mic(void) {
             xdist2 = (float)(i - xc) * (float)(i - xc);
             dist = sqrt(xdist2 + ydist2);
             if ((dist - 0.5) <= radius) {
-                if (Gop[1][i][j] > 0.0) {
-                    Gop[1][i][j] = 0.5;
-                    Gop[opnum][i][j] = 0.5;
-                } else {
-                    Gop[opnum][i][j] = 1.0; // Belongs to particle opnum
-                }
-                Gop[0][i][j] = 0.01;     // Is solid
+                Gop[opnum][i][j] = 1.0; // Belongs to particle opnum
+                Gop[0][i][j] = 1.0;     // Is solid
             } else {
                 Gop[opnum][i][j] = 0.0; // Does not belong to particle opnum
-                Gop[0][i][j] = 0.99;     // Is vapor
+                Gop[0][i][j] = 0.0;     // Is vapor
             }
         }
     }
@@ -177,7 +205,7 @@ void init_mic(void) {
 
     // Set radius of third circle
     
-    radius = 9.5;
+    radius = 9.0;
     irad = (int)(radius);
     opnum = 3;
 
@@ -189,16 +217,11 @@ void init_mic(void) {
             xdist2 = (float)(i - xc) * (float)(i - xc);
             dist = sqrt(xdist2 + ydist2);
             if ((dist - 0.5) <= radius) {
-                if (Gop[1][i][j] > 0.0) {
-                    Gop[1][i][j] = 0.5;
-                    Gop[opnum][i][j] = 0.5;
-                } else {
-                    Gop[opnum][i][j] = 1.0; // Belongs to particle opnum
-                }
-                Gop[0][i][j] = 0.01;     // Is solid
+                Gop[opnum][i][j] = 1.0; // Belongs to particle opnum
+                Gop[0][i][j] = 1.0;     // Is solid
             } else {
                 Gop[opnum][i][j] = 0.0; // Does not belong to particle opnum
-                Gop[0][i][j] = 0.99;     // Is vapor
+                Gop[0][i][j] = 0.0;     // Is vapor
             }
         }
     }
@@ -210,49 +233,33 @@ void init_mic(void) {
 
 double calcBulkDeriv(double func[NUMOP][XSIZE][YSIZE], int op, int i, int j) {
 
-    register int m, p, q;
+    register int m;
     double bd = 0.0;
-    double c;
-    double term = 0.0;
-    double term1 = 0.0;
+    double c,p;
     double term2 = 0.0;
-    double a = 1.0;
-    double b = 1.0;
-    double dalpha = 1.0;
-    double dbeta = 1.0;
-    double gamma = 1.0;
-    double delta = 1.0;
-    double calpha = 0.99;
-    double cbeta = 0.01;
-    double cmean = (calpha+cbeta)/2;
-    double epsilon[Gnumop-Gnumcop][Gnumop-Gnumcop];
-    
-    //set epsilon
-    for (p=0; p < (Gnumop-Gnumcop); p++){
-        for (q=0; q < (Gnumop-Gnumcop); q++){
-            epsilon[p][q]=1;
-        }
-    }
+    double term3 = 0.0;
 
     c = func[0][i][j];  // volume fraction of vacancies
+    p = func[op][i][j];  // non-conserved order parameter
 
     for (m = 1; m < NUMOP; m++) {
-        term += pow(func[m][i][j],2.0); //works for conserved op
+        term2 += pow(func[m][i][j],2.0);
+        term3 += pow(func[m][i][j],3.0);
     }
-    for (m = 1; m < NUMOP; m++){ //for nonconserved ops
-        term1 += 2*epsilon[op][m] * pow(func[m][i][j],2.0);
-    }
-    term2 = term1 - pow(func[op][i][j],2.0);
+
     switch (op) {
-        //case for conserved order parameter 
         case 0:
-            bd = b*pow((c-cmean),3.0) - a*(c-cmean) + dalpha * pow((c-calpha),3.0) + dbeta*pow((c-cbeta),3.0);
-            bd += -((c-calpha) * gamma * term);
+            bd = 2.0 * GA * c * (1.0 - c) * (1.0 - c);
+            bd -= (2.0 * GA * c * c * (1.0 - c));
+            bd += (2.0 * GB * c);
+            bd -= (6.0 * GB * term2);
+            bd += (4.0 * GB * term3);
             break;
-        //case for non conserved order parameter
+
         default:
-            bd = delta*pow(func[op][i][j],3.0) - (pow((c-calpha),2.0)*func[op][i][j]*gamma)
-                 + (func[op][i][j]*term2);
+            bd = 12.0 * GB * (1.0 - c) * p;
+            bd -= (12.0 * GB * (2.0 - c) * p * p);
+            bd += (12.0 * GB * term2 * p);
             break;
     }
 

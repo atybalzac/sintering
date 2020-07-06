@@ -19,6 +19,8 @@ extern const double GFluct;
 extern const int Gnumcop;
 extern const int Gnumop;
 
+extern const double GA;
+extern double GB;
 extern double Gop[NUMOP][XSIZE][YSIZE];
 extern struct Vec Gfield[NUMOP][XSIZE][YSIZE];
 extern double Geps2[NUMOP];
