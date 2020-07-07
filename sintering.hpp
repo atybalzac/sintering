@@ -1,6 +1,6 @@
 #pragma once
-#define XSIZE 100
-#define YSIZE 100
+#define XSIZE 120
+#define YSIZE 60
 #define NUMOP 4
 
 struct Vec {
@@ -28,6 +28,7 @@ extern double Geps2[NUMOP];
 // Function declarations
 int checkbc(int i, int lambda);
 struct Vec grad(double func[NUMOP][XSIZE][YSIZE], int op, int i, int j);
+double mob(int i, int j);
 double laplac(double func[NUMOP][XSIZE][YSIZE], int op, int i, int j);
 double div(struct Vec v[NUMOP][XSIZE][YSIZE], int op, int i, int j);
 double calcBulkDeriv(double func[NUMOP][XSIZE][YSIZE], int op, int i, int j);
