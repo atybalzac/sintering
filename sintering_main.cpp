@@ -119,7 +119,7 @@ int main(int argc, char **argv){
                     blue = 1.0-Gop[0][i][j];
                     red = green = maxop;
 
-                    //set pixel colors, can replace with commented lines for grayscale instead of blue/pink
+                    //set pixel colors
                     img -> SetPixel(i, j, (RGBApixel){
                         .Blue = (ebmpBYTE)(255*(blue)),
                         .Green =(ebmpBYTE)(255*(green)),
