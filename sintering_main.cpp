@@ -7,8 +7,8 @@
 int main(int argc, char **argv){
     
     register int i, j, k;
-    double endtime = 1000.0;
-    double dcdt,conc,time,prefactor;
+    double endtime = 900.0;
+    double dcdt,conc,time,prefactor,sum;
     double temp[NUMOP][XSIZE][YSIZE],chempot[NUMOP][XSIZE][YSIZE];
     double bulkderiv[NUMOP][XSIZE][YSIZE];
     double maxop;
@@ -45,7 +45,7 @@ int main(int argc, char **argv){
     //Advance through time
     sprintf(oldtime,"0");
 
-    sprintf(newtime,"%d",(int)(time));
+    sprintf(newtime,"%d",(int)(10.0*time));
     /*
     sprintf(imgpath,"%s.txt", argv[1]);
     if ((fpout = fopen(imgpath,"w")) == NULL) {
@@ -75,6 +75,8 @@ int main(int argc, char **argv){
         for (i = 0; i < XSIZE; i++){
             for (j = 0; j < YSIZE; j++){
                 Gfield[0][i][j] = grad(chempot,0,i,j);
+                Gfield[0][i][j].x = mob(i,j) * Gfield[0][i][j].x;
+                Gfield[0][i][j].y = mob(i,j) * Gfield[0][i][j].y;
             }
         }
 
@@ -87,8 +89,7 @@ int main(int argc, char **argv){
        
         for (i = 0; i < XSIZE; i++){
             for (j = 0; j < YSIZE; j++){
-                dcdt = GMc * div(Gfield,0,i,j);
-                dcdt = GMc * div(Gfield,0,i,j);
+                dcdt = div(Gfield,0,i,j);
                 temp[0][i][j] = Gop[0][i][j] + (dcdt * Gdt);
                 for (k = 1; k < NUMOP; k++) {
                     temp[k][i][j] = Gop[k][i][j] - ((GMnc * chempot[k][i][j]) * Gdt);
@@ -103,10 +104,12 @@ int main(int argc, char **argv){
   //      std::cout << "Updating order parameters... ";
   //      std::cout.flush();
 
-        sprintf(newtime,"%d",(int)(time));
+        sprintf(newtime,"%d",(int)(10.0*time));
         if (argc > 1 && (strcmp(oldtime,newtime) || time < Gdt)) { 
+            sum = 0.0;
             for (j = 0; j < YSIZE; ++j) {
                 for (i = 0; i < XSIZE; ++i) {
+                    sum  += Gop[0][i][j];
                     maxop= -5000.0;
                     for (k = 1; k < NUMOP; k++) {
                         if (Gop[k][i][j] > maxop) maxop = Gop[k][i][j];
@@ -145,6 +148,7 @@ int main(int argc, char **argv){
                     */
                 }
             }
+            std::cout << "Tot conc = " << sum << std::endl;
         }
 
         for (i = 0; i < XSIZE; i++){

@@ -4,17 +4,17 @@
 
 // Global Variables
 
-const double GA = 10.0;
+const double GA = 11.0;
 double Gcm = 1.0;
 double GB = 1.0;
 double Ggam = 1.0; 
 double GDa = 1.0;
 double GDb = 1.0;
 
-const double GMnc = 0.6;
-const double GMc = 0.6;
-const double Gh = 1.0;
-const double Gdt = .001;
+const double GMnc = 5.0;
+const double GMc = 5.0;
+const double Gh = 0.5;
+const double Gdt = .0001;
 const double GFluct = 0.02;
 const int Gnumop = (int)(NUMOP);
 const int Gnumcop = 1;
@@ -53,16 +53,27 @@ struct Vec grad(double func[NUMOP][XSIZE][YSIZE], int op, int i, int j) {
     return (gradient);
 }
 
+// Calculate the mobility at a point to simulate surface diffusion
+
+double mob(int i, int j) {
+    double term = GMc * (1.0 + pow(Gop[0][i][j],2.0));
+    return (term);
+}
+
 // calculates laplacian of c
 
 double laplac(double func[NUMOP][XSIZE][YSIZE], int op, int i, int j) {
-    double xderiv = func[op][checkbc(i+1,XSIZE)][j]
-        - 2.0 * func[op][i][j]
-        + func[op][checkbc(i-1,XSIZE)][j];
-    double yderiv = func[op][i][checkbc(j+1,YSIZE)]
-        - 2.0 * func[op][i][j]
-        + func[op][i][checkbc(j-1,YSIZE)];
-    return (xderiv+yderiv)/(Gh*Gh);
+    double term = 0.5 * func[op][checkbc(i+1,XSIZE)][j];
+    term += (0.5 * func[op][checkbc(i-1,XSIZE)][j]);
+    term += (0.5 * func[op][i][checkbc(j+1,YSIZE)]);
+    term += (0.5 * func[op][i][checkbc(j-1,YSIZE)]);
+    term += (0.25 * func[op][checkbc(i+1,XSIZE)][checkbc(j+1,YSIZE)]);
+    term += (0.25 * func[op][checkbc(i+1,XSIZE)][checkbc(j-1,YSIZE)]);
+    term += (0.25 * func[op][checkbc(i-1,XSIZE)][checkbc(j+1,YSIZE)]);
+    term += (0.25 * func[op][checkbc(i-1,XSIZE)][checkbc(j-1,YSIZE)]);
+    term -= (3.0 * func[op][i][j]);
+
+    return (term)/(Gh*Gh);
 }
 
 //calculates the divergence of a vector field at a point
@@ -104,34 +115,23 @@ void init_mic(void) {
     
     GB = 1.0;
 
-    Geps2[0] = 2.0;
+    Geps2[0] = 3.0;
     for (k = 1; k < NUMOP; ++k) {
-        Geps2[k] = 2.0;
+        Geps2[k] = 1.5;
     }
 
     // Set center of first circle
    
-    xc = 50.0;
+    xc = 60.0;
     nxc = (int)(xc);
-    yc = 50.0;
+    yc = 30.0;
     nyc = (int)(yc);
 
     // Set radius of first circle
     
-    radius = 7.0;
+    radius = 11.0;
     irad = (int)(radius);
     opnum = 1;
-
-    /*
-    xc = 13.0;
-    nxc = (int)(xc);
-    yc = 10.0;
-    nyc = (int)(yc);
-
-    radius = 3.0;
-    irad = (int)(radius);
-    opnum = 1;
-    */
 
     // Place first circle
     
@@ -152,15 +152,15 @@ void init_mic(void) {
             
     // Set center of second circle
    
-    xc = 35.0;
+    xc = 27.0;
     nxc = (int)(xc);
-    yc = 50.0;
+    yc = 30.0;
     nyc = (int)(yc);
 
 
     // Set radius of second circle
     
-    radius = 7.0;
+    radius = 22.0;
     irad = (int)(radius);
     opnum = 2;
 
@@ -197,15 +197,15 @@ void init_mic(void) {
             
     // Set center of third circle
    
-    xc = 67.0;
+    xc = 93.0;
     nxc = (int)(xc);
-    yc = 50.0;
+    yc = 30.0;
     nyc = (int)(yc);
 
 
     // Set radius of third circle
     
-    radius = 9.0;
+    radius = 22.0;
     irad = (int)(radius);
     opnum = 3;
 
