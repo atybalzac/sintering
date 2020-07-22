@@ -6,6 +6,7 @@
 struct Vec {
     double x;   // x component of a 2D vector
     double y;   // y component of a 2D vector
+    double z;
 };
 
 // Global variables
@@ -33,3 +34,9 @@ double laplac(double func[NUMOP][XSIZE][YSIZE], int op, int i, int j);
 double div(struct Vec v[NUMOP][XSIZE][YSIZE], int op, int i, int j);
 double calcBulkDeriv(double func[NUMOP][XSIZE][YSIZE], int op, int i, int j);
 void init_mic(void);
+struct Vec forcedensity(double func[NUMOP][XSIZE][YSIZE], int op1, int op2, int i, int j);
+struct Vec force(double func[NUMOP][XSIZE][YSIZE], int op1, int op2, int i, int j);
+double grain_volume(double func[NUMOP][XSIZE][YSIZE], int op, int i, int j);
+struct Vec grain_center(double func[NUMOP][XSIZE][YSIZE], int op, int i, int j);
+struct Vec torque(double func[NUMOP][XSIZE][YSIZE], int op1, int op2, int i, int j);
+struct Vec velocity(double func[NUMOP][XSIZE][YSIZE], int op1, int op2, int i, int j);

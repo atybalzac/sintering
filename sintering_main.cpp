@@ -1,12 +1,14 @@
-#include <iostream>
 #include "sintering.hpp"
-#include <stdio.h>
-#include "EasyBMP.h"
+
+#include <iostream>
 #include <limits.h>
+#include <stdio.h>
+
+#include "EasyBMP.h"
 
 int main(int argc, char **argv){
     
-    register int i, j, k;
+    register int i, j, k, m;
     double endtime = 900.0;
     double dcdt,conc,time,prefactor,sum;
     double temp[NUMOP][XSIZE][YSIZE],chempot[NUMOP][XSIZE][YSIZE];
@@ -15,6 +17,8 @@ int main(int argc, char **argv){
     double blue,green,red;
     char oldtime[128],newtime[128];
     struct Vec term[NUMOP][XSIZE][YSIZE];
+    struct Vec vecterm[NUMOP][XSIZE][YSIZE];
+    
 
     //seed random number generator
     //
@@ -61,13 +65,15 @@ int main(int argc, char **argv){
             for (j = 0; j < YSIZE; j++){
                 for (k = 0; k < NUMOP; k++) {
                     bulkderiv[k][i][j]  = calcBulkDeriv(Gop,k,i,j);
-                    chempot[k][i][j] = bulkderiv[k][i][j] - (Geps2[k] * laplac(Gop,k,i,j));
+                    chempot[k][i][j] = bulkderiv[k][i][j] - (Geps2[k] * laplac(Gop,k,i,j)); 
                 }
             }
         }
  //       std::cout << "Done!" << std::endl;
   //      std::cout << "Calculating Gfield... ";
  //       std::cout.flush();
+
+        //df/dc - eps^2 del^2 c and df/dn - eps^2 del^2 n
 
         // Now the inner scalar term is calculated everywhere, we next need
         // to create the inner vector field
@@ -84,15 +90,31 @@ int main(int argc, char **argv){
   //      std::cout << "Updating order parameters... ";
   //      std::cout.flush();
 
+  //      grad(df/dc - eps^2 del^2 c)
+
         // Now all we need to do is take the divergence of the vector field Gfield,
         // already calculated at each point above, and then multiply by the mobility
-       
+
         for (i = 0; i < XSIZE; i++){
             for (j = 0; j < YSIZE; j++){
-                dcdt = div(Gfield,0,i,j);
+                for(k = 1; k < NUMOP; k++){
+                    for(m = 1; m < NUMOP; m++){
+                        vecterm[0][i][j].x += velocity(Gop, k, m, i, j).x;
+                        vecterm[0][i][j].y += velocity(Gop, k, m, i, j).y;
+                    }
+                }
+                vecterm[0][i][j].x = Gfield[0][i][j].x - (vecterm[0][i][j].x * Gop[0][i][j]);
+                vecterm[0][i][j].y = Gfield[0][i][j].y - (vecterm[0][i][j].y * Gop[0][i][j]);
+                dcdt = div(vecterm,0,i,j);
                 temp[0][i][j] = Gop[0][i][j] + (dcdt * Gdt);
                 for (k = 1; k < NUMOP; k++) {
-                    temp[k][i][j] = Gop[k][i][j] - ((GMnc * chempot[k][i][j]) * Gdt);
+                    for (m = 1; m < NUMOP; m++){
+                        if(k != m){
+                            vecterm[k][i][j].x = Gop[k][i][j] * velocity(Gop, k, m, i, j).x; // velocity term for non conserved op
+                            vecterm[k][i][j].y = Gop[k][i][j] * velocity(Gop, k, m, i, j).y;
+                        }
+                    }
+                    temp[k][i][j] = Gop[k][i][j] - (GMnc * chempot[k][i][j] * Gdt) - div(vecterm, k, i, j);
                 }
             }
         }
