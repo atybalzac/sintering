@@ -22,8 +22,46 @@ const int Gnumcop = 1;
 double Gop[NUMOP][XSIZE][YSIZE];          /* concentration field */
 struct Vec Gfield[NUMOP][XSIZE][YSIZE];  /* chemical potential field */
 double Geps2[NUMOP];
-
+double Gvolume[NUMOP];
+struct Vec Gforce[NUMOP];
+struct Vec Gcenter[NUMOP];
+struct Vec Gtorque[NUMOP];
 // Function definitions
+
+//initializes Gvolume, Gforce, Gcenter, Gtorque to 0
+void initVolume(void){
+    for (int i = 1; i < NUMOP; i++){
+        Gvolume[i]=0;
+    }
+    return;
+}
+
+void initForce(void){
+    for (int i = 0; i < NUMOP; i++){
+        Gforce[i].x = 0;
+        Gforce[i].y = 0;
+        Gforce[i].z = 0;
+    }
+    return;
+}
+
+void initCenter(void){
+    for (int i = 0; i < NUMOP; i++){
+        Gcenter[i].x=0;
+        Gcenter[i].y=0;
+        Gcenter[i].z=0;
+    }
+    return;
+}
+
+void initTorque(void){
+    for (int i = 0; i < NUMOP; i++){
+        Gtorque[i].x=0;
+        Gtorque[i].y=0;
+        Gtorque[i].z=0;
+    }
+    return;
+}
 
 //Checks whether we're at the boundary and loops back to the other side if we have periodic boundaries
 int checkbc(int i, int lambda){
@@ -98,9 +136,15 @@ struct Vec forcedensity(double func[NUMOP][XSIZE][YSIZE], int op1, int op2, int 
     double cgb = 0.1;
     double c0 = 1; // the equilibrium density?
     double term = (c-c0);
-    double k; //stiffness constant
+    double k = 1; //stiffness constant
     struct Vec density;
+    density.x = 0;
+    density.y = 0;
+    density.z = 0;
     struct Vec gradterm;
+    gradterm.x = 0;
+    gradterm.y = 0;
+    gradterm.z = 0;
     if(op1 > 0 && op2 > 0 && (p1*p2) >= cgb){
         gradterm.x += grad(func, op1, i, j).x-grad(func,op2,i,j).x;
         gradterm.y += grad(func, op1, i, j).y-grad(func,op2,i,j).y;
@@ -111,81 +155,60 @@ struct Vec forcedensity(double func[NUMOP][XSIZE][YSIZE], int op1, int op2, int 
 }
 
 //Calculates force acting on particle
-struct Vec force(double func[NUMOP][XSIZE][YSIZE], int op1, int op2, int i, int j){
-    struct Vec force;
-    force.x += forcedensity(func, op1, op2, i, j).x;
-    force.y += forcedensity(func, op1, op2, i, j).y;
-    force.z = 0;
-    return force;
+void force(double func[NUMOP][XSIZE][YSIZE], int op1, int op2, int i, int j){
+    Gforce[op1].x += forcedensity(func, op1, op2, i, j).x;
+    Gforce[op1].y += forcedensity(func, op1, op2, i, j).y;
+    return;
 }
 
 //calculates volume of particle
-double grain_volume(double func[NUMOP][XSIZE][YSIZE], int op, int i, int j){
+void grain_volume(double func[NUMOP][XSIZE][YSIZE], int op, int i, int j){
     double p = func[op][i][j];
-    double volume = 0;
-    volume += p;
-    return volume;
+    Gvolume[op] += p;
+    return;
 }
 
 //calculates center of mass of particles
-struct Vec grain_center(double func[NUMOP][XSIZE][YSIZE], int op, int i, int j){
+void grain_center(double func[NUMOP][XSIZE][YSIZE], int op, int i, int j){
     double p = func[op][i][j];
-    struct Vec position;
-    position.x = i;
-    position.y = j;
-    position.z = 0;
-    struct Vec center;
-    center.x = position.x * p / grain_volume(func, op, i, j);
-    center.y = position.y * p / grain_volume(func, op, i, j);
-    center.y = 0;
-    return center;
+    Gcenter[op].x += i*p/Gvolume[op];
+    Gcenter[op].y += j*p/Gvolume[op];
+    return;
 }
 
 //calculates torque on particle
-struct Vec torque(double func[NUMOP][XSIZE][YSIZE], int op1, int op2, int i, int j){
-    struct Vec position;
-    position.x = i;
-    position.y = j;
-    position.z = 0;
+void torque(double func[NUMOP][XSIZE][YSIZE], int op1, int op2, int i, int j){
     struct Vec diff;
-    diff.x = position.x - grain_center(func, op1, i, j).x;
-    diff.y = position.y - grain_center(func, op1, i, j).y;
+    diff.x = i - Gcenter[op1].x;
+    diff.y = j - Gcenter[op1].y;
     diff.z = 0;
 
-    struct Vec torque;
-    torque.x = 0;
-    torque.y = 0;
-    torque.z = position.x * forcedensity(func, op1, op2, i, j).y - position.y *forcedensity(func, op1, op2, i, j).x;
-    return torque;
+    Gtorque[op1].z += i * forcedensity(func, op1, op2, i, j).y - j * forcedensity(func, op1, op2, i, j).x;
+    return;
 }
 
 //calculates velocity of particle
-struct Vec velocity(double func[NUMOP][XSIZE][YSIZE], int op1, int op2, int i, int j){
+struct Vec velocity(double func[NUMOP][XSIZE][YSIZE], int op, int i, int j){
     struct Vec vtrans;
     struct Vec vrot;
-    double mtrans;
-    double mrot;
-    double p = func[op1][i][j];
-    double term1 = (mtrans/grain_volume(func, op1, i, j)) * p;
+    double mtrans = 1;
+    double mrot = 1;
+    double p = func[op][i][j];
+    double term1 = (mtrans/Gvolume[op]) * p;
 
-    vtrans.x = term1 * force(func, op1, op2, i, j).x;
-    vtrans.y = term1 * force(func, op1, op2, i, j).y;
+    vtrans.x = term1 * Gforce[op].x;
+    vtrans.y = term1 * Gforce[op].y;
     vtrans.z = 0;
 
-    struct Vec position;
-    position.x = i;
-    position.y = j;
-    position.z = 0;
-
     struct Vec diff;
-    diff.x = position.x - grain_center(func, op1, i, j).x;
-    diff.y = position.y - grain_center(func, op1, i, j).y;
+    diff.x = i - Gcenter[op].x;
+    diff.y = j - Gcenter[op].y;
     diff.z = 0;
     
-    double term2 = (mrot/grain_volume(func, op1, i, j)) * p;
+    double term2 = (mrot/Gvolume[op]) * p;
     
-    vrot.x = forcedensity(func, op1, op2, i, j).x * pow(position.y, 2) - position.x*position.y * forcedensity(func, op1, op2, i, j).y;
-    vrot.y = forcedensity(func, op1, op2, i, j).y * pow(position.x, 2) - position.x*position.y * forcedensity(func, op1, op2, i, j).x;
+    vrot.x = -term2*diff.y*Gtorque[op].z;
+    vrot.y = term2*diff.x*Gtorque[op].z;
     vrot.z = 0;
 
     struct Vec velocity;

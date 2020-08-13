@@ -59,6 +59,38 @@ int main(int argc, char **argv){
     */
 
     for (time = 0; time <= endtime; time += Gdt){
+    // resetting values of volume, force, particle center, torque, velocity term
+        initVolume();
+        initForce();
+        initCenter();
+        initTorque();
+        for(i = 0; i < XSIZE; i++){
+            for(j = 0; j < YSIZE; j++){
+                for(k = 0; k < NUMOP; k++){
+                    vecterm[k][i][j].x = 0;
+                    vecterm[k][i][j].y = 0;
+                    vecterm[k][i][j].z = 0;
+                }
+            }
+        }
+    // calculates volume of each particle
+        for (i = 0; i < XSIZE; i++){
+            for(j = 0; j < YSIZE; j++){
+                for (k = 1; k < NUMOP; k++){
+                    grain_volume(Gop, k, i, j);
+                }
+            }
+        }
+    // Calculates center of each particle
+        for(i = 0; i<XSIZE; i++){
+            for(j = 0; j< YSIZE; j++){
+                for (k = 1; k < NUMOP; k++){
+                    grain_center(Gop, k, i, j);
+                }
+            }
+        }
+
+
   //      std::cout << "Calculating chempot... ";
   //      std::cout.flush();
         for (i = 0; i < XSIZE; i++){
@@ -98,22 +130,17 @@ int main(int argc, char **argv){
         for (i = 0; i < XSIZE; i++){
             for (j = 0; j < YSIZE; j++){
                 for(k = 1; k < NUMOP; k++){
-                    for(m = 1; m < NUMOP; m++){
-                        vecterm[0][i][j].x += velocity(Gop, k, m, i, j).x;
-                        vecterm[0][i][j].y += velocity(Gop, k, m, i, j).y;
-                    }
+                    vecterm[0][i][j].x += velocity(Gop, k, i, j).x;
+                    vecterm[0][i][j].y += velocity(Gop, k, i, j).y;
                 }
                 vecterm[0][i][j].x = Gfield[0][i][j].x - (vecterm[0][i][j].x * Gop[0][i][j]);
                 vecterm[0][i][j].y = Gfield[0][i][j].y - (vecterm[0][i][j].y * Gop[0][i][j]);
                 dcdt = div(vecterm,0,i,j);
                 temp[0][i][j] = Gop[0][i][j] + (dcdt * Gdt);
                 for (k = 1; k < NUMOP; k++) {
-                    for (m = 1; m < NUMOP; m++){
-                        if(k != m){
-                            vecterm[k][i][j].x = Gop[k][i][j] * velocity(Gop, k, m, i, j).x; // velocity term for non conserved op
-                            vecterm[k][i][j].y = Gop[k][i][j] * velocity(Gop, k, m, i, j).y;
-                        }
-                    }
+                    vecterm[k][i][j].x = Gop[k][i][j] * velocity(Gop, k, i, j).x; // velocity term for non conserved op
+                    vecterm[k][i][j].y = Gop[k][i][j] * velocity(Gop, k, i, j).y;
+                    
                     temp[k][i][j] = Gop[k][i][j] - (GMnc * chempot[k][i][j] * Gdt) - div(vecterm, k, i, j);
                 }
             }
